@@ -1,4 +1,4 @@
-source(file = 'scripts_final/2_data_preparation_genomics_functions.r')
+source(file = 'final_scripts/2_data_preparation_genomics_functions.r')
 
 
 ##########################
@@ -31,7 +31,7 @@ keep.all <- master %>%
   filter(!is.na(age.weeks.42)) %>%
   dplyr::select(ID_1) %>%
   mutate(ID_2 = ID_1)
-#write.table(keep.all, "outputs/keep_files/keep.all.hand.foot.eye.child", sep = "\t", quote = F, row.names = F, col.names = F)
+#write.table(keep.all, "outputs/keep_files/keep.hand.foot.eye.resid", sep = "\t", quote = F, row.names = F, col.names = F)
 
 
 ##########################
@@ -39,12 +39,12 @@ keep.all <- master %>%
 # PART 3: CREATE PHENOTYPE FILE FOR GSEM
 
 # Read ID file from GRM
-ids.all <- read.table('data/grm.id/ALSPAC.all.hand.foot.eye.child.grm.id', h=F)
+ids.all <- read.table('data/grm.id/ALSPAC.hand.foot.eye.resid.grm.id', h=F)
 colnames(ids.all) <- c("ID_1", "ID_2")
 ids.all$ID_1 <- as.character(ids.all$ID_1)
 
 # read Principal components
-pcs.all <- read.table('data/eigenvec/all.hand.foot.eye.eigenvec', h=F)
+pcs.all <- read.table('data/eigenvec/hand.foot.eye.resid.eigenvec', h=F)
 pcs.all <- pcs.all %>%
   dplyr::select(c(V1, V3, V4))
 colnames(pcs.all) <- c("ID_1", "pc1", "pc2")
@@ -94,20 +94,66 @@ mydata.resid <- left_join(ids.all, mydata.resid, by = "ID_1")
 
 myphenos.gsem <- mydata.resid %>%
   dplyr::select(hand.cat, foot.cat, eye.cat)
-#write.table(myphenos.gsem, 'outputs/pheno_files_gsem/all.hand.foot.eye.cat.resid', quote = F, row.names = F, col.names = F)
+#write.table(myphenos.gsem, 'outputs/pheno_files_gsem/hand.foot.eye.resid', quote = F, row.names = F, col.names = F)
 
 # univariate reml analyses
 for (pheno in phenos) {
   
-  myphenos.reml <- mydata.resid %>%
+  myphenos.resid.reml <- mydata.resid %>%
     dplyr::select(ID_1, ID_2, all_of(pheno))
   
-  output.reml <- paste0("outputs/pheno_files_reml/reml.all.", pheno, ".resid")
+  output.resid.reml <- paste0("outputs/pheno_files_reml/reml.", pheno, ".resid")
   
-  #write.table(myphenos.reml, output.reml, quote = F, row.names = F, col.names = F)
+  #write.table(myphenos.resid.reml, output.resid.reml, quote = F, row.names = F, col.names = F)
   
 }
 
+# univariate reml analyses: mixed
+for (pheno in phenos) {
+  
+  myphenos.mixed.reml <- mydata %>%
+    mutate(ID_2 = ID_1) %>%
+    dplyr::select(ID_1, ID_2, all_of(pheno)) 
+  
+  myphenos.mixed.reml[which(myphenos.mixed.reml[,3] == 2), 3] <- NA
+  
+  #print(freq(myphenos.mixed.reml[,3]))
+  
+  output.mixed.reml <- paste0("outputs/pheno_files_reml/reml.", pheno, ".mixed")
+  
+  #write.table(myphenos.mixed.reml, output.mixed.reml, quote = F, row.names = F, col.names = F)
+  
+}
+
+# univariate reml analyses: left
+for (pheno in phenos) {
+  
+  myphenos.left.reml <- mydata %>%
+    mutate(ID_2 = ID_1) %>%
+    dplyr::select(ID_1, ID_2, all_of(pheno)) 
+  
+  myphenos.left.reml[which(myphenos.left.reml[,3] == 1), 3] <- NA
+  myphenos.left.reml[which(myphenos.left.reml[,3] == 2), 3] <- 1
+  
+  #print(freq(myphenos.left.reml[,3]))
+  
+  output.left.reml <- paste0("outputs/pheno_files_reml/reml.", pheno, ".left")
+  #write.table(myphenos.left.reml, output.left.reml, quote = F, row.names = F, col.names = F)
+  
+}
+
+# covariate files for left and mixed
+mycovar.reml <- mydata %>%
+  mutate(ID_2 = ID_1) %>%
+  dplyr::select(ID_1, ID_2, sex) 
+
+#write.table(mycovar.reml, "outputs/pheno_files_reml/reml.covar", quote = F, row.names = F, col.names = F)
+
+myqcovar.reml <- mydata %>%
+  mutate(ID_2 = ID_1) %>%
+  dplyr::select(ID_1, ID_2, age.weeks.42, pc1, pc2) 
+
+#write.table(myqcovar.reml, "outputs/pheno_files_reml/reml.qcovar", quote = F, row.names = F, col.names = F)
 
 
 ##########################

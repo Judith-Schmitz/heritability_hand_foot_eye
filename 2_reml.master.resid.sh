@@ -4,7 +4,7 @@
 # estimate variance explained by the respective SNPs
 
 # quantitative phenotypes
-for pheno in hand.cat foot.cat eye.cat hand.colour hand.cut hand.draw hand.hit hand.hold hand.throw foot.climb foot.kick foot.pick foot.stamp eye.bottle eye.hole
+for pheno in hand foot eye hand.colour hand.cut hand.draw hand.hit hand.hold hand.throw foot.climb foot.kick foot.pick foot.stamp eye.bottle eye.hole
 
 do
 
@@ -17,7 +17,7 @@ cat > reml.${pheno}.resid.sh <<EOF1
 #SBATCH --export=ALL
 #SBATCH --cpus-per-task=2
 
-~/apps/gcta_1.93.2beta/gcta64 \
+~/apps/conda/envs/geno_utils/bin/gcta64 \
 --reml \
 --grm-bin ~/scratch/family_hand_foot_eye/grm/ALSPAC.hand.foot.eye.resid \
 --pheno ~/scratch/family_hand_foot_eye/phenos/reml.${pheno}.resid \

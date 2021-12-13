@@ -31,7 +31,7 @@ G <- grm.bin.input(mygrm)
 # read phenotypes
 print("read phenotypes")
 input <- "../phenos/grmsem.${pheno}"
-myph <- read.table(input, header=F)
+myph <- read.table(input, header = FALSE)
 
 # Run a Cholesky model:
 print("running Cholesky model")

@@ -5,6 +5,10 @@ library(xlsx) # export dataframes to xlsx files
 library(summarytools)
 library(BBmisc) # for z standardisation
 library(aod) # for logistic regression
+library(ggpubr)
+library(RVAideMemoire) # for speakman.rank
+library(gmodels) # for CrossTable
+library(RNOmni) # for rank normalization
 
 read.alspac <- function(mypath = 'C:\\Users\\Judith\\OneDrive - University of St Andrews\\St Andrews\\projects\\gwas\\data_preparation\\data\\Paracchini_12Feb20.sav') {
   
@@ -201,7 +205,8 @@ normalize.alspac <- function(dataset) {
     sex = as.factor(sex),
     id.twins = as.character(id.twins),
     #writing.hand = ifelse(writing.hand == 8, NA, writing.hand),
-    ID_1 = as.character(paste0(id, id.twins))) %>% 
+    ID_1 = id,
+    ID_2 = as.character(paste0(id, id.twins))) %>% 
     mutate_if(.predicate = is.factor, .funs = funs('levels<-'(., trimws(levels(.)))) #Trim factor-levels' string
               
     ) %>% mutate ( 
@@ -263,6 +268,18 @@ normalize.alspac <- function(dataset) {
       
     ) %>% mutate(
       
+      hand.sum = rowSums(.[,7:12], na.rm = TRUE),
+      foot.sum = rowSums(.[,13:16], na.rm = TRUE),
+      eye.sum = rowSums(.[,17:18], na.rm = TRUE),
+      m.hand.sum = rowSums(.[,25:35], na.rm = TRUE),
+      m.foot.sum = rowSums(.[,36:39], na.rm = TRUE),
+      m.eye.sum = rowSums(.[,40:41], na.rm = TRUE),
+      p.hand.sum = rowSums(.[,46:56], na.rm = TRUE),
+      p.foot.sum = rowSums(.[,57:60], na.rm = TRUE),
+      p.eye.sum = rowSums(.[,61:62], na.rm = TRUE)
+      
+    ) %>% mutate(
+      
       hand.mean = rowMeans(.[,7:12], na.rm = TRUE),
       foot.mean = rowMeans(.[,13:16], na.rm = TRUE),
       eye.mean = rowMeans(.[,17:18], na.rm = TRUE),
@@ -275,35 +292,35 @@ normalize.alspac <- function(dataset) {
       
     ) %>% mutate(
       
-      hand = ifelse(test = hand.mean < 2, yes = 1, no = 0),
-      hand = ifelse(test = hand.mean <= 2.75 & hand.mean >= 2, yes = 2, no = hand),
-      hand = ifelse(test = hand.mean > 2.75, yes = 3, no = hand),
-      foot = ifelse(test = foot.mean < 2, yes = 1, no = 0),
-      foot = ifelse(test = foot.mean < 2.5 & foot.mean >= 2, yes = 2, no = foot),
-      foot = ifelse(test = foot.mean >= 2.5, yes = 3, no = foot),
-      eye = ifelse(test = eye.mean < 2, yes = 1, no = 0),
-      eye = ifelse(test = eye.mean < 2.5 & eye.mean >= 2, yes = 2, no = eye),
-      eye = ifelse(test = eye.mean >= 2.5, yes = 3, no = eye),
+      hand = ifelse(test = hand.mean < 1.5, yes = 1, no = 0),
+      hand = ifelse(test = hand.mean <= 2.6 & hand.mean >= 1.5, yes = 2, no = hand),
+      hand = ifelse(test = hand.mean > 2.6, yes = 3, no = hand),
+      foot = ifelse(test = foot.mean < 1.5, yes = 1, no = 0),
+      foot = ifelse(test = foot.mean < 2.6 & foot.mean >= 1.5, yes = 2, no = foot),
+      foot = ifelse(test = foot.mean >= 2.6, yes = 3, no = foot),
+      eye = ifelse(test = eye.mean < 1.5, yes = 1, no = 0),
+      eye = ifelse(test = eye.mean < 2.6 & eye.mean >= 1.5, yes = 2, no = eye),
+      eye = ifelse(test = eye.mean >= 2.6, yes = 3, no = eye),
       
       m.hand = ifelse(test = m.hand.mean < 1.5, yes = 1, no = 0),
       m.hand = ifelse(test = m.hand.mean <= 2.6 & m.hand.mean >= 1.5, yes = 2, no = m.hand),
       m.hand = ifelse(test = m.hand.mean > 2.6, yes = 3, no = m.hand),
-      m.foot = ifelse(test = m.foot.mean < 1.75, yes = 1, no = 0),
-      m.foot = ifelse(test = m.foot.mean < 2.5 & m.foot.mean >= 1.75, yes = 2, no = m.foot),
-      m.foot = ifelse(test = m.foot.mean >= 2.5, yes = 3, no = m.foot),
-      m.eye = ifelse(test = m.eye.mean < 2, yes = 1, no = 0),
-      m.eye = ifelse(test = m.eye.mean < 2.5 & m.eye.mean >= 2, yes = 2, no = m.eye),
-      m.eye = ifelse(test = m.eye.mean >= 2.5, yes = 3, no = m.eye),
+      m.foot = ifelse(test = m.foot.mean < 1.5, yes = 1, no = 0),
+      m.foot = ifelse(test = m.foot.mean < 2.6 & m.foot.mean >= 1.5, yes = 2, no = m.foot),
+      m.foot = ifelse(test = m.foot.mean >= 2.6, yes = 3, no = m.foot),
+      m.eye = ifelse(test = m.eye.mean < 1.5, yes = 1, no = 0),
+      m.eye = ifelse(test = m.eye.mean < 2.6 & m.eye.mean >= 1.5, yes = 2, no = m.eye),
+      m.eye = ifelse(test = m.eye.mean >= 2.6, yes = 3, no = m.eye),
       
       p.hand = ifelse(test = p.hand.mean < 1.5, yes = 1, no = 0),
       p.hand = ifelse(test = p.hand.mean <= 2.6 & p.hand.mean >= 1.5, yes = 2, no = p.hand),
       p.hand = ifelse(test = p.hand.mean > 2.6, yes = 3, no = p.hand),
-      p.foot = ifelse(test = p.foot.mean < 1.75, yes = 1, no = 0),
-      p.foot = ifelse(test = p.foot.mean < 2.5 & p.foot.mean >= 1.75, yes = 2, no = p.foot),
-      p.foot = ifelse(test = p.foot.mean >= 2.5, yes = 3, no = p.foot),
-      p.eye = ifelse(test = p.eye.mean < 2, yes = 1, no = 0),
-      p.eye = ifelse(test = p.eye.mean < 2.5 & p.eye.mean >= 2, yes = 2, no = p.eye),
-      p.eye = ifelse(test = p.eye.mean >= 2.5, yes = 3, no = p.eye),
+      p.foot = ifelse(test = p.foot.mean < 1.5, yes = 1, no = 0),
+      p.foot = ifelse(test = p.foot.mean < 2.6 & p.foot.mean >= 1.5, yes = 2, no = p.foot),
+      p.foot = ifelse(test = p.foot.mean >= 2.6, yes = 3, no = p.foot),
+      p.eye = ifelse(test = p.eye.mean < 1.5, yes = 1, no = 0),
+      p.eye = ifelse(test = p.eye.mean < 2.6 & p.eye.mean >= 1.5, yes = 2, no = p.eye),
+      p.eye = ifelse(test = p.eye.mean >= 2.6, yes = 3, no = p.eye),
       
     ) %>% mutate(
       
@@ -336,9 +353,55 @@ normalize.alspac <- function(dataset) {
       both.eye = ifelse(test = m.eye == 2 & p.eye == 1, yes = 4, no = both.eye),
       both.eye = ifelse(test = m.eye == 1 & p.eye == 2, yes = 4, no = both.eye),
       both.eye = ifelse(test = m.eye == 1 & p.eye == 1, yes = 5, no = both.eye)
+      
+    ) %>% mutate(
+      
+      hand.lr = ifelse(test = hand.mean <= 2, yes = 1, no = NA),
+      foot.lr = ifelse(test = foot.mean <= 2, yes = 1, no = NA),
+      eye.lr = ifelse(test = eye.mean <= 2, yes = 1, no = NA),
+      
+      m.hand.lr = ifelse(test = m.hand.mean <= 2, yes = 1, no = NA),
+      m.foot.lr = ifelse(test = m.foot.mean <= 2, yes = 1, no = NA),
+      m.eye.lr = ifelse(test = m.eye.mean <= 2, yes = 1, no = NA),
+      
+      p.hand.lr = ifelse(test = p.hand.mean <= 2, yes = 1, no = NA),
+      p.foot.lr = ifelse(test = p.foot.mean <= 2, yes = 1, no = NA),
+      p.eye.lr = ifelse(test = p.eye.mean <= 2, yes = 1, no = NA)
 
+    ) %>% mutate(
+      
+      hand.lr = ifelse(test = hand.mean > 2, yes = 0, no = hand.lr),
+      foot.lr = ifelse(test = foot.mean > 2, yes = 0, no = foot.lr),
+      eye.lr = ifelse(test = eye.mean > 2, yes = 0, no = eye.lr),
+      
+      m.hand.lr = ifelse(test = m.hand.mean > 2, yes = 0, no = m.hand.lr),
+      m.foot.lr = ifelse(test = m.foot.mean > 2, yes = 0, no = m.foot.lr),
+      m.eye.lr = ifelse(test = m.eye.mean > 2, yes = 0, no = m.eye.lr),
+      
+      p.hand.lr = ifelse(test = p.hand.mean > 2, yes = 0, no = p.hand.lr),
+      p.foot.lr = ifelse(test = p.foot.mean > 2, yes = 0, no = p.foot.lr),
+      p.eye.lr = ifelse(test = p.eye.mean > 2, yes = 0, no = p.eye.lr)
+      
+      
+    ) %>% mutate(
+      
+      both.hand.lr = ifelse(test = p.hand.lr == 1 & m.hand.lr == 1, yes = 2, no = NA),
+      both.hand.lr = ifelse(test = p.hand.lr == 1 & m.hand.lr == 0, yes = 1, no = both.hand.lr),
+      both.hand.lr = ifelse(test = p.hand.lr == 0 & m.hand.lr == 1, yes = 1, no = both.hand.lr),
+      both.hand.lr = ifelse(test = p.hand.lr == 0 & m.hand.lr == 0, yes = 0, no = both.hand.lr),
+      
+      both.foot.lr = ifelse(test = p.foot.lr == 1 & m.foot.lr == 1, yes = 2, no = NA),
+      both.foot.lr = ifelse(test = p.foot.lr == 1 & m.foot.lr == 0, yes = 1, no = both.foot.lr),
+      both.foot.lr = ifelse(test = p.foot.lr == 0 & m.foot.lr == 1, yes = 1, no = both.foot.lr),
+      both.foot.lr = ifelse(test = p.foot.lr == 0 & m.foot.lr == 0, yes = 0, no = both.foot.lr),
+      
+      both.eye.lr = ifelse(test = p.eye.lr == 1 & m.eye.lr == 1, yes = 2, no = NA),
+      both.eye.lr = ifelse(test = p.eye.lr == 1 & m.eye.lr == 0, yes = 1, no = both.eye.lr),
+      both.eye.lr = ifelse(test = p.eye.lr == 0 & m.eye.lr == 1, yes = 1, no = both.eye.lr),
+      both.eye.lr = ifelse(test = p.eye.lr == 0 & m.eye.lr == 0, yes = 0, no = both.eye.lr),
+      
     ) %>% dplyr::select(ID_1,
-                        id,
+                        ID_2,
                         id.twins,
                         physical.disability,
                         sensory.impairment,
@@ -415,8 +478,30 @@ normalize.alspac <- function(dataset) {
                         both.eye,
                         # Writing hand
                         writing.hand,
-                        age.weeks.7
-    ) %>%
+                        age.weeks.7,
+                        # LR
+                        hand.lr,
+                        foot.lr,
+                        eye.lr,
+                        m.hand.lr,
+                        m.foot.lr,
+                        m.eye.lr,
+                        p.hand.lr,
+                        p.foot.lr,
+                        p.eye.lr,
+                        both.hand.lr,
+                        both.foot.lr,
+                        both.eye.lr,
+                        # Mean
+                        hand.mean,
+                        m.hand.mean,
+                        p.hand.mean,
+                        foot.mean,
+                        m.foot.mean,
+                        p.foot.mean,
+                        eye.mean,
+                        m.eye.mean,
+                        p.eye.mean) %>%
     
     filter(!is.na(hand) | !is.na(foot) | !is.na(eye))
   
@@ -455,8 +540,14 @@ clean.alspac <- function(mydata) {
     
     both.hand = as.factor(both.hand),
     both.foot = as.factor(both.foot),
-    both.eye = as.factor(both.eye)
+    both.eye = as.factor(both.eye),
     
+    both.hand.lr = as.factor(both.hand.lr),
+    both.foot.lr = as.factor(both.foot.lr),
+    both.eye.lr = as.factor(both.eye.lr)
+    
+    ) %>% select(
+      -c(physical.disability, sensory.impairment)
     )
   
   working.data[working.data == -9999] <- NA

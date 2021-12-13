@@ -56,16 +56,16 @@ pheno <- left_join(id.key, raw.hk, by = 'SubjectID') %>% mutate(
 ) %>% mutate (
   EHI_mean_6 = (EHI1_new + EHI2_new + EHI4_new + EHI5_new + EHI6_new + EHI7_new) / 6
 ) %>% mutate (
-  EHI_LMR_6 = ifelse(EHI_mean_6 <= 2, yes = 2, no = NA),
-  EHI_LMR_6 = ifelse(EHI_mean_6 <= 2.75 & EHI_mean_6 >= 2, yes = 1, no = EHI_LMR_6),
-  EHI_LMR_6 = ifelse(EHI_mean_6 > 2.75, yes = 0, no = EHI_LMR_6)
+  EHI_LMR_6 = ifelse(EHI_mean_6 <= 1.5, yes = 2, no = NA),
+  EHI_LMR_6 = ifelse(EHI_mean_6 <= 2.6 & EHI_mean_6 >= 1.5, yes = 1, no = EHI_LMR_6),
+  EHI_LMR_6 = ifelse(EHI_mean_6 > 2.6, yes = 0, no = EHI_LMR_6)
 )
 
 # keep only twins
 twindata <- pheno %>%
   filter(between(ZygGroup, 1, 5)) %>%
   filter(SubjectID != '0555278LMH01') %>% # 3x same FID - triplets? excluded 1 female, kept 2 male DZ
-  select(c(SubjectID, UID, FID, Gender, ZygGroup, ZygTwin, Ageyr, EHI_LMR_6, footLMR, eyeLMR)) %>%
+  select(SubjectID, UID, FID, Gender, ZygGroup, ZygTwin, Ageyr, EHI_LMR_6, footLMR, eyeLMR, EHI_mean_6) %>%
   arrange(desc(Gender)) %>%
   filter(!is.na(EHI_LMR_6)) %>%
   arrange(FID)
@@ -102,7 +102,7 @@ for (i in 1:length(phenos)) {
   
   reg <- glm(get(pheno) ~ Gender + Ageyr + pc1 + pc2, data = data)
   
-  data[which(!is.na(data[,6])), 6] <- rankNorm(residuals(reg))
+  data[which(!is.na(data[,6])), 6] <- RankNorm(residuals(reg))
   
   pheno.bind <- as.data.frame(data[,6])
   
@@ -113,8 +113,8 @@ for (i in 1:length(phenos)) {
 }
 
 # create separate datafiles for twin1 and twin2
-twin1_indexes<-seq(1,nrow(twindata.resid),2)
-twin2_indexes<-seq(2,nrow(twindata.resid),2)
+twin1_indexes <- seq(1, nrow(twindata.resid), 2)
+twin2_indexes <- seq(2, nrow(twindata.resid), 2)
 
 data.twin1 <- twindata.resid[c(twin1_indexes),]
 data.twin2 <- twindata.resid[c(twin2_indexes),]
@@ -134,18 +134,51 @@ add.twin1 <- data.twin1 %>%
 add.twin2 <- data.twin2 %>% 
   select(Gender, EHI_LMR_6, footLMR, eyeLMR) %>%
   rename("Gender2" = "Gender",
-         "hand2" = "EHI_LMR_6",
+         "ehi_6_resid2" = "EHI_LMR_6",
          "foot2" = "footLMR",
          "eye2" = "eyeLMR")
 
 mx.twindata <- cbind(add.twin1, add.twin2)
 
-write.table(mx.twindata, file = "data/SEM.hongkong.twindata.resid", quote = FALSE, sep = '\t', row.names = FALSE)
+#write.table(mx.twindata, file = "data/SEM.hongkong.twindata.resid", quote = FALSE, sep = '\t', row.names = FALSE)
+
 
 
 ##########################
 #
-# PART 2: CORRELATION PLOT, FIG S3
+# PART 2: HISTOGRAM, FIG S4
+
+tiff("outputs/plots/FigS4_new.tiff", units = "in", width = 9, height = 4, res = 300)
+ggplot(data = twindata,
+       aes(x = EHI_mean_6)) + 
+  geom_histogram(binwidth = 0.05, color = "black", fill = "gray") +
+  xlab("mean handedness score (Hong Kong)") + 
+  ylab("count") +
+  theme_bw() + 
+  theme(plot.title = element_text(),
+        axis.text.y = element_text(size = 10, face = "bold"),
+        axis.text.x = element_text(size = 10, face = "bold"),
+        axis.title = element_text(size = 10, face = "bold")) + 
+  # Lines
+  geom_vline(xintercept = 1.475, colour = "red", linetype = "longdash") + 
+  geom_vline(xintercept = 2.625, colour = "red", linetype = "longdash") + 
+  #geom_vline(xintercept = 1.975, colour = "blue", linetype = "longdash") + 
+  #geom_vline(xintercept = 2.725, colour = "blue", linetype = "longdash") + 
+  # Rectangles
+  geom_rect(aes(xmin = 1, xmax = 1.475, ymin = 200, ymax = 250), fill = "white", color = "red", size = 1) + 
+  geom_rect(aes(xmin = 1.475, xmax = 2.625, ymin = 200, ymax = 250), fill = "white", color = "red", size = 1) + 
+  geom_rect(aes(xmin = 2.625, xmax = 3, ymin = 200, ymax = 250), fill = "white", color = "red", size = 1) + 
+  # Text
+  annotate("text", x = 1.2375, y = 225, label = "n left = 20 \n (5.6%)", colour = "red") + 
+  annotate("text", x = 2.05, y = 225, label = "n mixed = 37 \n (10.3%)", colour = "red") + 
+  annotate("text", x = 2.8125, y = 225, label = "n right = 301 \n (84.1%)", colour = "red")
+dev.off()
+
+
+
+##########################
+#
+# PART 3: CORRELATION PLOT, FIG S7
 
 color.new <- brewer.pal(n = 10, name = 'RdYlBu')
 
@@ -159,7 +192,7 @@ colnames(cor.data) <- c("hand", "foot", "eye")
 cor <- rcorr(as.matrix(cor.data), type = "pearson")$r
 p.cor <- rcorr(as.matrix(cor.data), type = "pearson")$P
 
-tiff("outputs/plots/FigS3_final.tiff", units="in", width=5, height=5, res=300)
+tiff("outputs/plots/FigS7_new.tiff", units = "in", width = 7, height = 7, res = 300)
 corrplot(cor, 
          type = "lower", 
          tl.col = "black",
@@ -173,6 +206,7 @@ corrplot(cor,
          insig = "blank",
          pch.col = "black",
          pch.cex = 2,
-         tl.srt = 45)
+         tl.srt = 45,
+         cl.pos = "n")
 dev.off()
 

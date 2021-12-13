@@ -43,7 +43,7 @@ read.alspac <- function(mypath = 'C:\\Users\\Judith\\OneDrive - University of St
                             'kjfoot', # Footedness at 42 months
                             'kjeyed', # Eyedness at 42 months
                             
-                            'kj660', # hand used for drawing
+                            'kj660', # hand used for drawing 1=left, 2=right, 3=either
                             'kj661', # hand used for throwing
                             'kj662', # hand used to colour in 
                             'kj663', # hand used to hold toothbrush
@@ -137,25 +137,56 @@ normalize.alspac <- function(dataset) {
   
   norm.data <- dataset %>% mutate(
     
-    # before: 1 left, 2 mixed, 3 right
-    # new: 2 left, 1 mixed, 0 right
-    hand.cat = as.numeric(recode(hand.cat, '3'='0', '2'='1', '1'='2')),
-    foot.cat = as.numeric(recode(foot.cat, '3'='0', '2'='1', '1'='2')),
-    eye.cat = as.numeric(recode(eye.cat, '3'='0', '2'='1', '1'='2')), 
-    # before: 1 left, 3 either, 2 right
+    # before: 1=left, 3=either, 2=right
+    # after: 1=left, 2=either, 3=right
+    
+    hand.draw = as.numeric(recode(hand.draw, '3'='2', '2'='3', '1'='1')),
+    hand.throw = as.numeric(recode(hand.throw, '3'='2', '2'='3', '1'='1')),
+    hand.colour = as.numeric(recode(hand.colour, '3'='2', '2'='3', '1'='1')),
+    hand.hold = as.numeric(recode(hand.hold, '3'='2', '2'='3', '1'='1')),
+    hand.cut = as.numeric(recode(hand.cut, '3'='2', '2'='3', '1'='1')),
+    hand.hit = as.numeric(recode(hand.hit, '3'='2', '2'='3', '1'='1')),
+    foot.kick = as.numeric(recode(foot.kick, '3'='2', '2'='3', '1'='1')),
+    foot.pick = as.numeric(recode(foot.pick, '3'='2', '2'='3', '1'='1')),
+    foot.stamp = as.numeric(recode(foot.stamp, '3'='2', '2'='3', '1'='1')),
+    foot.climb = as.numeric(recode(foot.climb, '3'='2', '2'='3', '1'='1')),
+    eye.hole = as.numeric(recode(eye.hole, '3'='2', '2'='3', '1'='1')),
+    eye.bottle = as.numeric(recode(eye.bottle, '3'='2', '2'='3', '1'='1')),
+    
+  ) %>% mutate(
+    
+    hand.mean = rowMeans(.[,8:13], na.rm = TRUE),
+    foot.mean = rowMeans(.[,14:17], na.rm = TRUE),
+    eye.mean = rowMeans(.[,18:19], na.rm = TRUE),
+    
+  ) %>% mutate(  
+    
+    hand = ifelse(test = hand.mean < 1.5, yes = 2, no = 0),
+    hand = ifelse(test = hand.mean <= 2.6 & hand.mean >= 1.5, yes = 1, no = hand),
+    hand = ifelse(test = hand.mean > 2.6, yes = 0, no = hand),
+    foot = ifelse(test = foot.mean < 1.5, yes = 2, no = 0),
+    foot = ifelse(test = foot.mean < 2.6 & foot.mean >= 1.5, yes = 1, no = foot),
+    foot = ifelse(test = foot.mean >= 2.6, yes = 0, no = foot),
+    eye = ifelse(test = eye.mean < 1.5, yes = 2, no = 0),
+    eye = ifelse(test = eye.mean < 2.6 & eye.mean >= 1.5, yes = 1, no = eye),
+    eye = ifelse(test = eye.mean >= 2.6, yes = 0, no = eye),
+    
+  ) %>% mutate(  
+    
+    # before: 1=left, 2=either, 3=right
     # new: 2 left, 1 mixed, 0 right  
-    hand.draw = as.numeric(recode(hand.draw, '3'='1', '2'='0', '1'='2')), 
-    hand.throw = as.numeric(recode(hand.throw, '3'='1', '2'='0', '1'='2')), 
-    hand.colour = as.numeric(recode(hand.colour, '3'='1', '2'='0', '1'='2')), 
-    hand.hold = as.numeric(recode(hand.hold, '3'='1', '2'='0', '1'='2')), 
-    hand.cut = as.numeric(recode(hand.cut, '3'='1', '2'='0', '1'='2')), 
-    hand.hit = as.numeric(recode(hand.hit, '3'='1', '2'='0', '1'='2')), 
-    foot.kick = as.numeric(recode(foot.kick, '3'='1', '2'='0', '1'='2')), 
-    foot.pick = as.numeric(recode(foot.pick, '3'='1', '2'='0', '1'='2')), 
-    foot.stamp = as.numeric(recode(foot.stamp, '3'='1', '2'='0', '1'='2')), 
-    foot.climb = as.numeric(recode(foot.climb, '3'='1', '2'='0', '1'='2')), 
-    eye.hole = as.numeric(recode(eye.hole, '3'='1', '2'='0', '1'='2')), 
-    eye.bottle = as.numeric(recode(eye.bottle, '3'='1', '2'='0', '1'='2'))
+    hand.draw = as.numeric(recode(hand.draw, '3'='0', '2'='1', '1'='2')), 
+    hand.throw = as.numeric(recode(hand.throw, '3'='0', '2'='1', '1'='2')), 
+    hand.colour = as.numeric(recode(hand.colour, '3'='0', '2'='1', '1'='2')), 
+    hand.hold = as.numeric(recode(hand.hold, '3'='0', '2'='1', '1'='2')), 
+    hand.cut = as.numeric(recode(hand.cut, '3'='0', '2'='1', '1'='2')), 
+    hand.hit = as.numeric(recode(hand.hit, '3'='0', '2'='1', '1'='2')), 
+    foot.kick = as.numeric(recode(foot.kick, '3'='0', '2'='1', '1'='2')), 
+    foot.pick = as.numeric(recode(foot.pick, '3'='0', '2'='1', '1'='2')), 
+    foot.stamp = as.numeric(recode(foot.stamp, '3'='0', '2'='1', '1'='2')), 
+    foot.climb = as.numeric(recode(foot.climb, '3'='0', '2'='1', '1'='2')), 
+    eye.hole = as.numeric(recode(eye.hole, '3'='0', '2'='1', '1'='2')), 
+    eye.bottle = as.numeric(recode(eye.bottle, '3'='0', '2'='1', '1'='2'))
     
   ) %>% dplyr::select(
     ID_1,
@@ -167,6 +198,9 @@ normalize.alspac <- function(dataset) {
     hand.cat,
     foot.cat,
     eye.cat,
+    hand,
+    foot,
+    eye,
     hand.draw, 
     hand.throw, 
     hand.colour, 
@@ -178,7 +212,8 @@ normalize.alspac <- function(dataset) {
     foot.stamp, 
     foot.climb, 
     eye.hole, 
-    eye.bottle)
+    eye.bottle,
+    hand.mean)
   
   return(norm.data)
   

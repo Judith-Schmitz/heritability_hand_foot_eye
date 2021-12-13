@@ -1,4 +1,4 @@
-source(file = 'final_scripts/2_data_preparation_genomics_functions.r')
+source(file = 'final_scripts_R1/2_data_preparation_genomics_functions.r')
 
 
 ##########################
@@ -60,7 +60,7 @@ rm(raw.alspac, alspac.clean)
 
 ### residualising
 
-phenos <- c("hand.cat", "foot.cat", "eye.cat", 
+phenos <- c("hand", "foot", "eye", 
             "hand.draw", "hand.throw", "hand.colour", "hand.hold", "hand.cut", "hand.hit", 
             "foot.kick", "foot.pick", "foot.stamp", "foot.climb",
             "eye.bottle", "eye.hole" )
@@ -77,7 +77,7 @@ for (i in 1:length(phenos)) {
 
   reg <- glm(get(pheno) ~ sex + age.weeks.42 + pc1 + pc2, data = data)
   
-  data[which(!is.na(data[,6])), 6] <- rankNorm(residuals(reg))
+  data[which(!is.na(data[,6])), 6] <- RankNorm(residuals(reg))
   
   pheno.bind <- as.data.frame(data[,6])
   
@@ -93,8 +93,8 @@ rm(reg, pheno.bind, i, pheno)
 mydata.resid <- left_join(ids.all, mydata.resid, by = "ID_1") 
 
 myphenos.gsem <- mydata.resid %>%
-  dplyr::select(hand.cat, foot.cat, eye.cat)
-#write.table(myphenos.gsem, 'outputs/pheno_files_gsem/hand.foot.eye.resid', quote = F, row.names = F, col.names = F)
+  dplyr::select(hand, foot, eye)
+#write.table(myphenos.gsem, 'outputs/pheno_files_grmsem/grmsem.hand.foot.eye.resid', quote = F, row.names = F, col.names = F)
 
 # univariate reml analyses
 for (pheno in phenos) {
@@ -117,7 +117,7 @@ for (pheno in phenos) {
   
   myphenos.mixed.reml[which(myphenos.mixed.reml[,3] == 2), 3] <- NA
   
-  #print(freq(myphenos.mixed.reml[,3]))
+  print(freq(myphenos.mixed.reml[,3]))
   
   output.mixed.reml <- paste0("outputs/pheno_files_reml/reml.", pheno, ".mixed")
   
@@ -135,7 +135,7 @@ for (pheno in phenos) {
   myphenos.left.reml[which(myphenos.left.reml[,3] == 1), 3] <- NA
   myphenos.left.reml[which(myphenos.left.reml[,3] == 2), 3] <- 1
   
-  #print(freq(myphenos.left.reml[,3]))
+  print(freq(myphenos.left.reml[,3]))
   
   output.left.reml <- paste0("outputs/pheno_files_reml/reml.", pheno, ".left")
   #write.table(myphenos.left.reml, output.left.reml, quote = F, row.names = F, col.names = F)
@@ -161,21 +161,21 @@ myqcovar.reml <- mydata %>%
 # PART 4: CREATE PHENOTYPE FILE FOR PRS
 
 # Read ID file
-sample <- read.table('data/data.sample', h=T)
+sample <- read.table('data/data.sample', header = TRUE)
 sample <- sample %>%
   filter(ID_1 != 0) %>%
   dplyr::select(ID_1, ID_2, sex, plink_pheno)
 sample$ID_1 <- as.character(sample$ID_1)
 
 mydata.prs <- left_join(sample, mydata.resid, by = 'ID_1') %>%
-  filter(!is.na(hand.cat) | !is.na(foot.cat) | !is.na(eye.cat)) %>%
-  dplyr::select(ID_1, hand.cat, foot.cat, eye.cat)
+  filter(!is.na(hand) | !is.na(foot) | !is.na(eye)) %>%
+  dplyr::select(ID_1, hand, foot, eye)
 
 sample.hand.foot.eye <- left_join(sample[,1:2], mydata.prs, by = 'ID_1') 
 
-colnames(sample.hand.foot.eye) <- c("FID", "IID", "hand.cat", "foot.cat", "eye.cat")
+colnames(sample.hand.foot.eye) <- c("FID", "IID", "hand", "foot", "eye")
 
-#write.table(sample.hand.foot.eye, 'outputs/pheno_files_prs/sample.hand.foot.eye', quote = F, row.names = F, col.names = T)
+#write.table(sample.hand.foot.eye, 'outputs/pheno_files_prs/sample.hand.foot.eye.resid', quote = F, row.names = F, col.names = T)
 
 
 
@@ -187,9 +187,9 @@ color.new <- brewer.pal(n = 10, name = 'RdYlBu')
 
 # check correlations between items
 cor.data <- mydata.resid %>%
-  dplyr::select(hand.cat, hand.draw, hand.throw, hand.colour, hand.hold, hand.cut, hand.hit, 
-                foot.cat, foot.kick, foot.pick, foot.stamp, foot.climb, 
-                eye.cat, eye.hole, eye.bottle)
+  dplyr::select(hand, hand.draw, hand.throw, hand.colour, hand.hold, hand.cut, hand.hit, 
+                foot, foot.kick, foot.pick, foot.stamp, foot.climb, 
+                eye, eye.hole, eye.bottle)
 
 colnames(cor.data) <- c("hand summary", "draw", "throw", "colour", "hold", "cut", "hit", 
                         "foot summary", "kick", "pick", "stamp", "climb", 
@@ -199,7 +199,7 @@ colnames(cor.data) <- c("hand summary", "draw", "throw", "colour", "hold", "cut"
 cor <- rcorr(as.matrix(cor.data), type = "pearson")$r
 p.cor <- rcorr(as.matrix(cor.data), type = "pearson")$P
 
-tiff("outputs/plots/FigS1_final.tiff", units="in", width=10, height=10, res=300)
+tiff("outputs/plots/FigS6_new.tiff", units = "in", width = 10, height = 12, res = 300)
 corrplot(cor, 
          type = "lower", 
          tl.col = "black",
